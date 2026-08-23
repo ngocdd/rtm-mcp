@@ -30,7 +30,7 @@ npx rtm-mcp
 
 ## Features
 
-- **40+ tools** covering CRUD and link management for every RTM resource.
+- **32 MCP tools** covering CRUD, link management, attachments, and CI result import for every RTM resource.
 - **Bearer-token auth** via `RTM_API_TOKEN`. Generate a token in Jira:
   Apps → Requirements and Test Management → ⋯ → *Rest API authentication* → Generate Token.
 - **US + EU regions** — switch via `RTM_BASE_URL`.
@@ -168,89 +168,156 @@ A missing or empty `RTM_API_TOKEN` aborts startup with a friendly hint.
 
 ## Available tools
 
-All tools return MCP `text` content with pretty-printed JSON.
+All tools return MCP `text` content with pretty-printed JSON. **32 tools** total, organised by RTM resource below. Use the MCP host's tool-list command to enumerate them at runtime.
 
 ### Requirements (`REQUIREMENTS`)
 
-- `rtm_list_requirements` — list with `projectKey`, optional `folder`, `page`, `pageSize`
 - `rtm_get_requirement` — fetch by `requirementKey`
 - `rtm_create_requirement` — create
 - `rtm_update_requirement` — partial update
-- `rtm_delete_requirement`
-- `rtm_set_requirement_covered_test_cases` — replace link set
-- `rtm_add_requirement_covered_test_cases` — append
-- `rtm_remove_requirement_covered_test_cases` — remove subset
+- `rtm_delete_requirement` — permanently delete
+
+> RTM has no list endpoint for requirements — use `rtm_get_tree_structure` to enumerate them per project.
 
 ### Test Cases (`TEST_CASES`)
 
-- `rtm_list_test_cases`, `rtm_get_test_case`, `rtm_create_test_case`,
-  `rtm_update_test_case`, `rtm_delete_test_case`
-- `rtm_set_test_case_covered_requirements`, `rtm_add_test_case_covered_requirements`,
-  `rtm_remove_test_case_covered_requirements`
+- `rtm_get_test_case` — fetch by `testCaseKey`
+- `rtm_create_test_case` — create (pass `stepGroups` to define steps)
+- `rtm_update_test_case` — partial update
+- `rtm_update_test_case_covered_requirements` — manage covered-requirement links. Pass exactly one of `set` / `add` / `remove`. Wire call: `PUT /api/v2/test-case/{key}/covered-requirements` with body `{ coveredRequirements: { <op>: [...] } }`.
+
+> `rtm_delete_test_case` is intentionally not exposed — perform deletes via the Jira UI. RTM has no list endpoint — use `rtm_get_tree_structure`.
 
 ### Test Plans (`TEST_PLANS`)
 
-- `rtm_list_test_plans`, `rtm_get_test_plan`, `rtm_create_test_plan`,
-  `rtm_update_test_plan`, `rtm_delete_test_plan`
-- `rtm_set_test_plan_included_test_cases`, `rtm_add_test_plan_included_test_cases`,
-  `rtm_remove_test_plan_included_test_cases`
+- `rtm_get_test_plan` — fetch by `testPlanKey`
+- `rtm_create_test_plan` — create (pass `includedTestCases` to populate on creation)
+- `rtm_update_test_plan` — partial update
+- `rtm_update_test_plan_included_test_cases` — manage included-test-case links. Pass exactly one of `set` / `add` / `remove`. Wire call: `PUT /api/v2/test-plan/{key}/included-test-cases` with body `{ includedTestCases: { <op>: [...] } }`.
+
+> `rtm_delete_test_plan` is intentionally not exposed — perform deletes via the Jira UI. RTM has no list endpoint — use `rtm_get_tree_structure`.
 
 ### Test Executions (`TEST_EXECUTIONS`)
 
-- `rtm_list_test_executions`, `rtm_get_test_execution`, `rtm_create_test_execution`,
-  `rtm_update_test_execution`, `rtm_delete_test_execution`
+- `rtm_get_test_execution` — fetch by `testExecutionKey`
+- `rtm_create_test_execution` — create by executing a Test Plan (pass `testPlanTestKey`)
+- `rtm_update_test_execution` — partial update (accepts `status`, `summary`, `description`, `priority`, `owner`, `customFields`)
+- `rtm_delete_test_execution` — permanently delete
+
+> RTM has no list endpoint — use `rtm_get_tree_structure`.
 
 ### Test Case Executions (`TCE`)
 
-- `rtm_link_defect_to_test_case_execution`
-- `rtm_unlink_defect_from_test_case_execution`
-- `rtm_link_defect_to_test_case_execution_step`
-- `rtm_unlink_defect_from_test_case_execution_step`
-- `rtm_list_test_case_execution_attachments`
-- `rtm_upload_test_case_execution_attachment` (base64 input)
+TCE = one row in a Test Execution that records the result of running one Test Case.
+
+- `rtm_get_test_case_execution` — fetch one TCE (result, executor, comment, defects, steps)
+- `rtm_update_test_case_execution` — partial update. Pass `result: "Fail"` (or `"Pass"`, `"Blocked"`, …) to change pass/fail status. Wire call: `PUT /api/v2/test-case-execution/{key}` with body `{ result: { name: "Fail" } }`.
+- `rtm_link_defect_to_test_case_execution` — link a defect to the whole TCE
+- `rtm_link_defect_to_test_case_execution_step` — link a defect to a specific step
+- `rtm_list_test_case_execution_attachments` — list attachments on the TCE
+- `rtm_upload_test_case_execution_attachment` (base64 input) — upload a file to the TCE
+- `rtm_get_test_case_execution_attachment` — fetch one attachment's metadata (returns download URL)
+- `rtm_list_test_case_execution_step_attachments` — list attachments on a single step
+- `rtm_upload_test_case_execution_step_attachment` (base64 input) — upload a file to a specific step
+
+> DELETE endpoints on TCE (`unlink defect`, `delete attachment`) are intentionally **not** exposed — perform those via the Jira UI or call the underlying REST API directly. The endpoints exist; only the MCP one-shot wrappers were removed because destructive operations belong behind a confirmation flow.
 
 ### Defects
 
-- `rtm_list_defects`, `rtm_get_defect`, `rtm_create_defect`,
-  `rtm_update_defect`, `rtm_delete_defect`
-- `rtm_set_defect_identifying_test_cases`
+- `rtm_get_defect` — fetch by `defectKey`
+- `rtm_create_defect` — create (pass `identifyingTestCases` to link to test cases)
+- `rtm_update_defect` — partial update
+- `rtm_delete_defect` — permanently delete
+
+> RTM has no list endpoint — use `rtm_get_tree_structure` or `jira_search` via the Atlassian MCP.
 
 ### Tree
 
-- `rtm_get_tree_structure` — optional `projectKey`, optional `resourceType`
+- `rtm_get_tree_structure` — fetch the folder tree for a project. Requires numeric `projectId` (resolve from `projectKey` via the Jira REST API) and `treeType` ∈ `REQUIREMENTS` / `TEST_CASES` / `TEST_PLANS` / `TEST_EXECUTIONS`.
 
 ### Automation
 
-- `rtm_import_test_results` — upload ZIP/TAR.GZ of JUnit/NUnit/Cucumber JSON; returns a `taskId`
-- `rtm_get_import_status` — poll until `status` leaves `IMPORTING`
+- `rtm_import_test_results` — upload a ZIP/TAR.GZ archive of JUnit / NUnit / Cucumber JSON reports; returns a `taskId`
+- `rtm_get_import_status` — poll a previous `taskId` until `status` leaves `IMPORTING`
+
+## Conventions used across every resource
+
+| Convention | Description |
+|---|---|
+| **Link management** | One `PUT /api/v2/{resource}/{key}/{linkField}` endpoint takes the operation (`set` / `add` / `remove`) in the body. There are no separate `…/set`, `…/add`, `…/remove` paths. |
+| **Test Case Execution result** | The pass/fail status is sent as `{ result: { name: "Fail" } }` (not a plain string). The MCP tool normalises `result: "Fail"` → `{ result: { name: "Fail" } }` automatically. |
+| **Attachments** | Upload via multipart with `file=@…`. List, fetch-by-id, and step-level variants are exposed per the V2 layout. |
+| **No DELETE MCP tools for nested resources** | Unlinking defects and deleting attachments belong behind an explicit confirmation flow in the MCP client — not a one-shot tool call. Use the Jira UI or call the REST API directly. |
 
 ---
 
 ## Examples
 
-> *"List the 10 most recent Requirements in project ACME."*
+> *"Enumerate the requirements in project ACME."*
 
 ```
-> rtm_list_requirements { projectKey: "ACME", pageSize: 10 }
+> // No list endpoint — fetch the tree and walk it.
+> rtm_get_tree_structure { projectId: 10000, treeType: "REQUIREMENTS" }
 ```
 
 > *"Create a Test Case called 'Login with valid credentials' under folder /Smoke and link it to requirement ACME-42."*
 
 ```
-> rtm_create_test_case { projectKey: "ACME", name: "Login with valid credentials", folder: "/Smoke", stepGroups: [...] }
-> rtm_set_test_case_covered_requirements { testCaseKey: "<new>", requirementKeys: ["ACME-42"] }
+> rtm_create_test_case { projectKey: "ACME", summary: "Login with valid credentials", folder: "/Smoke", stepGroups: [...] }
+> rtm_update_test_case_covered_requirements { testCaseKey: "<new>", set: ["ACME-42"] }
 ```
 
-> *"Link defect DEF-1 to test-case execution TCE-42 at step 3."*
+> *"Add 3 test cases to plan KAN-52 without replacing the existing set."*
 
 ```
-> rtm_link_defect_to_test_case_execution_step { testCaseExecutionKey: "TCE-42", stepId: "3", defectTestKey: "DEF-1" }
+> rtm_update_test_plan_included_test_cases {
+    testPlanKey: "KAN-52",
+    add: ["KAN-30", "KAN-31", "KAN-32"]
+  }
+```
+
+> *"Link defect KAN-100 to test-case execution KAN-53-KAN-46 at step 8517443."*
+
+```
+> rtm_link_defect_to_test_case_execution_step {
+    testCaseExecutionKey: "KAN-53-KAN-46",
+    stepId: "8517443",
+    defectTestKey: "KAN-100"
+  }
+```
+
+> *"Mark TCE KAN-53-KAN-46 as Failed and add a comment."*
+
+```
+> rtm_update_test_case_execution {
+    testCaseExecutionKey: "KAN-53-KAN-46",
+    result: "Fail",
+    comment: "Login button did not respond after 3 retries"
+  }
+```
+
+> *"Attach a screenshot to step 2 of TCE KAN-53-KAN-46."*
+
+```
+> rtm_upload_test_case_execution_step_attachment {
+    testCaseExecutionKey: "KAN-53-KAN-46",
+    stepId: "8517444",
+    filename: "evidence.png",
+    contentBase64: "<base64 bytes>",
+    mimeType: "image/png"
+  }
 ```
 
 > *"Import last night's JUnit XML."*
 
 ```
-> rtm_import_test_results { projectKey: "ACME", filename: "junit.zip", contentBase64: "<base64>", reportType: "JUNIT", jobUrl: "https://ci/job/123" }
+> rtm_import_test_results {
+    projectKey: "ACME",
+    filename: "junit.zip",
+    contentBase64: "<base64>",
+    reportType: "JUNIT",
+    jobUrl: "https://ci/job/123"
+  }
 > rtm_get_import_status { taskId: "<returned>" }
 ```
 
@@ -262,7 +329,7 @@ All tools return MCP `text` content with pretty-printed JSON.
 |--------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------|
 | Server exits on startup with `RTM_API_TOKEN is required`     | Token missing or empty. Set it as `RTM_API_TOKEN=...` before launching.                                              |
 | Tool returns `Authentication failed. Verify RTM_API_TOKEN…`  | Token invalid, expired, or generated for a different user. Re-generate in Jira.                                      |
-| Tool returns `Resource not found`                            | The test key doesn't match any issue — verify it with `rtm_list_*` first.                                          |
+| Tool returns `Resource not found`                            | The test key doesn't match any issue — verify it with `rtm_get_*` or the tree-structure tool.                     |
 | `Validation failed (HTTP 400)`                               | RTM rejected the payload. The tool message includes the parsed response body.                                         |
 | `Rate limited by RTM API (HTTP 429). Retry after Ns.`        | You're hitting the rate limit. Reduce concurrency or wait.                                                          |
 | `Network error reaching RTM API`                             | Wrong `RTM_BASE_URL` (US vs EU mismatch), firewall, or transient network issue.                                       |

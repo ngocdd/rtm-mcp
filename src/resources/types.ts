@@ -233,15 +233,27 @@ export interface TestCaseExecution {
   testKey?: string;
   testExecutionKey?: string;
   status?: string;
-  result?: string;
+  /** TCE result is returned as a structured object (id + name + color). */
+  result?: { id?: number; name?: string; color?: string; statusName?: string };
   executor?: string;
   executedBy?: string;
   executedOn?: string;
+  comment?: string;
   defects?: LinkRef[];
   attachments?: Attachment[];
   customFields?: Record<string, unknown>;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface UpdateTestCaseExecutionInput {
+  summary?: string;
+  /** Pass either a string status name or a `{ name }` / `{ id }` object. */
+  result?: string | { id?: number; name?: string };
+  status?: string;
+  comment?: string;
+  executedBy?: string;
+  customFields?: Record<string, unknown>;
 }
 
 export interface Defect {

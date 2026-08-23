@@ -3,18 +3,23 @@
  *
  * NOTE: `rtm_list_test_cases` was removed because the RTM REST API exposes no
  * list endpoint. Use the tree-structure tool to enumerate test cases in a
- * project. Covered-requirements link tools were removed because the underlying
- * PUT endpoints return 404 on the live API.
+ * project.
+ *
+ * DELETE endpoints are intentionally NOT exposed as MCP tools — destructive
+ * operations belong behind an explicit confirmation flow in the MCP client.
  */
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { TestCasesResource } from '../resources/test-cases.js';
+import type {
+  CoveredRequirementsOperation,
+  TestCasesResource,
+} from '../resources/test-cases.js';
 import {
   CreateTestCaseSchema,
-  DeleteTestCaseSchema,
   GetTestCaseSchema,
+  UpdateCoveredRequirementsSchema,
   UpdateTestCaseSchema,
 } from '../schemas/test-case.schema.js';
-import { textResult, toErrorResult } from '../utils/response.js';
+import { textResult, errorResult, toErrorResult } from '../utils/response.js';
 
 export function registerTestCaseTools(
   server: McpServer,
@@ -61,16 +66,38 @@ export function registerTestCaseTools(
   );
 
   server.tool(
-    'rtm_delete_test_case',
-    'Permanently delete a Test Case.',
-    DeleteTestCaseSchema.shape,
+    'rtm_update_test_case_covered_requirements',
+    'Manage covered-requirements links on a Test Case. Pass exactly one of `set` (replace the whole link set), `add` (append), or `remove` (drop from the set). Wire call: PUT /api/v2/test-case/{key}/covered-requirements with body `{ coveredRequirements: { <op>: [...] } }`.',
+    UpdateCoveredRequirementsSchema.shape,
     async (args) => {
       try {
-        await resource.delete(args.testCaseKey);
-        return textResult({ deleted: true, testCaseKey: args.testCaseKey });
+        const { testCaseKey, set, add, remove } = args;
+        const ops = [set, add, remove].filter((v) => v !== undefined);
+        if (ops.length !== 1) {
+          return errorResult(
+            'Provide exactly one of `set`, `add`, or `remove` — these are mutually exclusive operations on the same endpoint.',
+          );
+        }
+
+        const operation: CoveredRequirementsOperation =
+          set !== undefined
+            ? { set: normalizeRefList(set) }
+            : add !== undefined
+              ? { add: normalizeRefList(add) }
+              : { remove: normalizeRefList(remove as never) };
+
+        return textResult(
+          await resource.updateCoveredRequirements(testCaseKey, operation),
+        );
       } catch (err) {
-        return toErrorResult(err, 'rtm_delete_test_case');
+        return toErrorResult(err, 'rtm_update_test_case_covered_requirements');
       }
     },
   );
+}
+
+function normalizeRefList(
+  refs: ReadonlyArray<string | { testKey: string }>,
+): Array<{ testKey: string }> {
+  return refs.map((r) => (typeof r === 'string' ? { testKey: r } : r));
 }

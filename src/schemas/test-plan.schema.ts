@@ -41,18 +41,22 @@ export const UpdateTestPlanSchema = z.object({
   customFields: z.record(z.unknown()).optional(),
 });
 
-export const DeleteTestPlanSchema = z.object({
-  testPlanKey: z.string().min(1),
-});
+/**
+ * Body for the single `PUT /api/v2/test-plan/{key}/included-test-cases`
+ * endpoint. Exactly one of `set`, `add`, or `remove` must be provided —
+ * the wire payload becomes `{ includedTestCases: { <op>: [...] } }`.
+ *
+ * Mutual exclusion is enforced in the tool handler (see
+ * `registerTestPlanTools`) so the schema keeps its `.shape` accessible
+ * to the MCP SDK.
+ */
+const tcRef = z
+  .union([z.string().min(1), z.object({ testKey: z.string().min(1) })])
+  .describe('Test Case reference — pass a test key or `{ testKey }` object.');
 
-// NOTE: included-test-cases linking is NOT supported by the live RTM REST API
-// (returns 404 on every PUT). Schemas retained so callers fail fast; tools
-// that exposed them have been removed.
-const IncludedTestCasesSchema = z.object({
-  testPlanKey: z.string().min(1),
-  testCaseKeys: z.array(z.string().min(1)).min(1),
+export const UpdateIncludedTestCasesSchema = z.object({
+  testPlanKey: z.string().min(1).describe('Test Plan test key.'),
+  set: z.array(tcRef).min(1).optional().describe('Replace the included set with these test cases.'),
+  add: z.array(tcRef).min(1).optional().describe('Append these test cases to the included set.'),
+  remove: z.array(tcRef).min(1).optional().describe('Remove these test cases from the included set.'),
 });
-
-export const SetIncludedTestCasesSchema = IncludedTestCasesSchema;
-export const AddIncludedTestCasesSchema = IncludedTestCasesSchema;
-export const RemoveIncludedTestCasesSchema = IncludedTestCasesSchema;

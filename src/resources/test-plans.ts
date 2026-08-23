@@ -1,16 +1,35 @@
 /**
  * Resource methods for Test Plans.
  *
- * Endpoint pattern: /api/test-plan (no version segment)
+ * V2 endpoints:
+ *   GET  /api/v2/test-plan/{testKey}
+ *   POST /api/v2/test-plan
+ *   PUT  /api/v2/test-plan/{testKey}
+ *   PUT  /api/v2/test-plan/{testKey}/included-test-cases
+ *        body: { "includedTestCases": { "set"|"add"|"remove": [{"testKey": "..."}] } }
+ *
+ * Included-test-cases link management follows the same single-endpoint +
+ * body-operation pattern as Test Case covered-requirements (documented on
+ * the devinti REST API page). Earlier attempts to call separate
+ * `/{testKey}/included-test-cases/set|add|remove` returned 404.
+ *
+ * DELETE endpoints are intentionally NOT exposed — destructive operations
+ * belong behind an explicit confirmation flow in the MCP client.
  */
 import { HttpClient } from '../client/http.js';
 import type {
   CreateTestPlanInput,
+  LinkRef,
   TestPlan,
   UpdateTestPlanInput,
 } from './types.js';
 
-const BASE = '/test-plan';
+const BASE = '/v2/test-plan';
+
+export type IncludedTestCasesOperation =
+  | { set: LinkRef[] }
+  | { add: LinkRef[] }
+  | { remove: LinkRef[] };
 
 export class TestPlansResource {
   constructor(private readonly http: HttpClient) {}
@@ -30,12 +49,18 @@ export class TestPlansResource {
     );
   }
 
-  delete(testPlanKey: string): Promise<void> {
-    return this.http.delete<void>(`${BASE}/${encodeURIComponent(testPlanKey)}`);
+  /**
+   * Replace / extend / shrink the set of Test Cases included in a Test Plan.
+   * Pass exactly one of `set`, `add`, or `remove` — the body sent to RTM is
+   * `{ "includedTestCases": <operation> }`.
+   */
+  updateIncludedTestCases(
+    testPlanKey: string,
+    operation: IncludedTestCasesOperation,
+  ): Promise<TestPlan> {
+    return this.http.put<TestPlan>(
+      `${BASE}/${encodeURIComponent(testPlanKey)}/included-test-cases`,
+      { body: { includedTestCases: operation } },
+    );
   }
-
-  // NOTE: included-test-cases link management endpoints are NOT supported by
-  // the live RTM REST API (PUT .../included-test-cases → 404). The corresponding
-  // tools have been removed; if you re-introduce them, point at the correct
-  // path discovered from a fresh API doc.
 }

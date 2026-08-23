@@ -3,18 +3,23 @@
  *
  * NOTE: `rtm_list_test_plans` was removed because the RTM REST API exposes no
  * list endpoint. Use the tree-structure tool to enumerate test plans in a
- * project. Included-test-cases link tools were removed because the underlying
- * PUT endpoints return 404 on the live API.
+ * project.
+ *
+ * DELETE endpoints are intentionally NOT exposed as MCP tools — destructive
+ * operations belong behind an explicit confirmation flow in the MCP client.
  */
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { TestPlansResource } from '../resources/test-plans.js';
+import type {
+  IncludedTestCasesOperation,
+  TestPlansResource,
+} from '../resources/test-plans.js';
 import {
   CreateTestPlanSchema,
-  DeleteTestPlanSchema,
   GetTestPlanSchema,
+  UpdateIncludedTestCasesSchema,
   UpdateTestPlanSchema,
 } from '../schemas/test-plan.schema.js';
-import { textResult, toErrorResult } from '../utils/response.js';
+import { errorResult, textResult, toErrorResult } from '../utils/response.js';
 
 export function registerTestPlanTools(
   server: McpServer,
@@ -61,16 +66,38 @@ export function registerTestPlanTools(
   );
 
   server.tool(
-    'rtm_delete_test_plan',
-    'Permanently delete a Test Plan.',
-    DeleteTestPlanSchema.shape,
+    'rtm_update_test_plan_included_test_cases',
+    'Manage included-test-case links on a Test Plan. Pass exactly one of `set` (replace the whole set), `add` (append), or `remove` (drop from the set). Wire call: PUT /api/v2/test-plan/{key}/included-test-cases with body `{ includedTestCases: { <op>: [...] } }`.',
+    UpdateIncludedTestCasesSchema.shape,
     async (args) => {
       try {
-        await resource.delete(args.testPlanKey);
-        return textResult({ deleted: true, testPlanKey: args.testPlanKey });
+        const { testPlanKey, set, add, remove } = args;
+        const ops = [set, add, remove].filter((v) => v !== undefined);
+        if (ops.length !== 1) {
+          return errorResult(
+            'Provide exactly one of `set`, `add`, or `remove` — these are mutually exclusive operations on the same endpoint.',
+          );
+        }
+
+        const operation: IncludedTestCasesOperation =
+          set !== undefined
+            ? { set: normalizeRefList(set) }
+            : add !== undefined
+              ? { add: normalizeRefList(add) }
+              : { remove: normalizeRefList(remove as never) };
+
+        return textResult(
+          await resource.updateIncludedTestCases(testPlanKey, operation),
+        );
       } catch (err) {
-        return toErrorResult(err, 'rtm_delete_test_plan');
+        return toErrorResult(err, 'rtm_update_test_plan_included_test_cases');
       }
     },
   );
+}
+
+function normalizeRefList(
+  refs: ReadonlyArray<string | { testKey: string }>,
+): Array<{ testKey: string }> {
+  return refs.map((r) => (typeof r === 'string' ? { testKey: r } : r));
 }

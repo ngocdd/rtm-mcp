@@ -27,10 +27,9 @@ const stepGroupSchema = z.object({
   steps: z.array(stepSchema).min(1),
 });
 
-const testKeyList = z
-  .array(z.string().min(1))
-  .min(1)
-  .describe('List of test keys.');
+const reqRef = z
+  .union([z.string().min(1), z.object({ testKey: z.string().min(1) })])
+  .describe('Requirement reference — pass a test key or `{ testKey }` object.');
 
 export const GetTestCaseSchema = z.object({
   testCaseKey: z.string().min(1).describe('Test Case test key.'),
@@ -64,9 +63,7 @@ export const CreateTestCaseSchema = z.object({
   components: z.array(z.object({ id: z.string().optional(), name: z.string().optional() })).optional(),
   versions: z.array(z.object({ id: z.string().optional(), name: z.string().optional() })).optional(),
   stepGroups: z.array(stepGroupSchema).optional(),
-  coveredRequirements: z
-    .array(z.union([z.string(), z.object({ testKey: z.string() })]))
-    .optional(),
+  coveredRequirements: z.array(reqRef).optional(),
   links: z.array(z.object({ testKey: z.string() })).optional(),
   customFields: z.record(z.unknown()).optional(),
 });
@@ -92,18 +89,18 @@ export const UpdateTestCaseSchema = z.object({
   customFields: z.record(z.unknown()).optional(),
 });
 
-export const DeleteTestCaseSchema = z.object({
-  testCaseKey: z.string().min(1),
+/**
+ * Body for the single `PUT /api/v2/test-case/{key}/covered-requirements`
+ * endpoint. Exactly one of `set`, `add`, or `remove` must be provided —
+ * the wire payload becomes `{ coveredRequirements: { <op>: [...] } }`.
+ *
+ * The mutual-exclusion check is enforced in the tool handler (see
+ * `registerTestCaseTools`) so the schema keeps its `.shape` accessible to
+ * the MCP SDK.
+ */
+export const UpdateCoveredRequirementsSchema = z.object({
+  testCaseKey: z.string().min(1).describe('Test Case test key.'),
+  set: z.array(reqRef).min(1).optional().describe('Replace the link set with these requirements.'),
+  add: z.array(reqRef).min(1).optional().describe('Append these requirements to the link set.'),
+  remove: z.array(reqRef).min(1).optional().describe('Remove these requirements from the link set.'),
 });
-
-// NOTE: covered-requirements linking is NOT supported by the live RTM REST API
-// (returns 404 on every PUT). Schemas retained so callers fail fast with a
-// validation error; tools that exposed them have been removed.
-const CoveredRequirementsSchema = z.object({
-  testCaseKey: z.string().min(1),
-  requirementKeys: testKeyList.describe('Requirement test keys to link.'),
-});
-
-export const SetCoveredRequirementsSchema = CoveredRequirementsSchema;
-export const AddCoveredRequirementsSchema = CoveredRequirementsSchema;
-export const RemoveCoveredRequirementsSchema = CoveredRequirementsSchema;
