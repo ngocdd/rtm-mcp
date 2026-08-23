@@ -190,12 +190,18 @@ All tools return MCP `text` content with pretty-printed JSON. **32 tools** total
 
 ### Test Plans (`TEST_PLANS`)
 
-- `rtm_get_test_plan` — fetch by `testPlanKey`
-- `rtm_create_test_plan` — create (pass `includedTestCases` to populate on creation)
-- `rtm_update_test_plan` — partial update
-- `rtm_update_test_plan_included_test_cases` — manage included-test-case links. Pass exactly one of `set` / `add` / `remove`. Wire call: `PUT /api/v2/test-plan/{key}/included-test-cases` with body `{ includedTestCases: { <op>: [...] } }`.
+Mirrors the 8 endpoints documented in the public RTM REST API:
 
-> `rtm_delete_test_plan` is intentionally not exposed — perform deletes via the Jira UI. RTM has no list endpoint — use `rtm_get_tree_structure`.
+- `rtm_get_test_plan` — `GET /api/test-plan/{testKey}`
+- `rtm_create_test_plan` — `POST /api/test-plan`
+- `rtm_update_test_plan` — `PUT /api/test-plan/{testKey}`
+- `rtm_delete_test_plan` — `DELETE /api/test-plan/{testKey}`
+- `rtm_update_test_plan_tc_order` — `PUT /api/test-plan/{testKey}/tc-order` with body `{ order: [...] }`
+- `rtm_create_test_plan_folder` — `POST /api/test-plan/{testKey}/tree/folders`
+- `rtm_add_test_case_to_test_plan` — `POST /api/test-plan/{testKey}/testcases` with body `{ testKey: "..." }`
+- `rtm_remove_test_case_from_test_plan` — `DELETE /api/test-plan/{testKey}/testcases/{tcKey}`
+
+> RTM has no list endpoint — use `rtm_get_tree_structure`.
 
 ### Test Executions (`TEST_EXECUTIONS`)
 

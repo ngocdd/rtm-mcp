@@ -26,17 +26,17 @@ function jsonResponse(body: unknown, status = 200): Response {
   });
 }
 
-describe('TestPlansResource', () => {
-  it('get() encodes the key in the path under /v2', async () => {
+describe('TestPlansResource (V1)', () => {
+  it('get() encodes the key in the path', async () => {
     fetchSpy.mockResolvedValueOnce(jsonResponse({ key: 'ACME-1' }));
     const r = new TestPlansResource(new HttpClient(baseConfig));
     await r.get('ACME-1');
     const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://rtm.example.com/api/v2/test-plan/ACME-1');
+    expect(url).toBe('https://rtm.example.com/api/test-plan/ACME-1');
     expect(init.method).toBe('GET');
   });
 
-  it('create() POSTs JSON body', async () => {
+  it('create() POSTs JSON body to /test-plan', async () => {
     fetchSpy.mockResolvedValueOnce(jsonResponse({ key: 'NEW-1' }));
     const r = new TestPlansResource(new HttpClient(baseConfig));
     await r.create({
@@ -45,7 +45,7 @@ describe('TestPlansResource', () => {
       issueTypeId: 10016,
     });
     const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://rtm.example.com/api/v2/test-plan');
+    expect(url).toBe('https://rtm.example.com/api/test-plan');
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body as string)).toEqual({
       projectKey: 'ACME',
@@ -59,55 +59,75 @@ describe('TestPlansResource', () => {
     const r = new TestPlansResource(new HttpClient(baseConfig));
     await r.update('ACME-1', { summary: 'updated' });
     const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://rtm.example.com/api/v2/test-plan/ACME-1');
+    expect(url).toBe('https://rtm.example.com/api/test-plan/ACME-1');
     expect(init.method).toBe('PUT');
     expect(JSON.parse(init.body as string)).toEqual({ summary: 'updated' });
   });
 
-  it('updateIncludedTestCases() sends `set` body', async () => {
+  it('delete() DELETEs /{key}', async () => {
+    fetchSpy.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const r = new TestPlansResource(new HttpClient(baseConfig));
+    await r.delete('ACME-1');
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://rtm.example.com/api/test-plan/ACME-1');
+    expect(init.method).toBe('DELETE');
+  });
+
+  it('updateTestCaseOrder() PUTs /{key}/tc-order with body { order: [...] }', async () => {
     fetchSpy.mockResolvedValueOnce(jsonResponse({ key: 'ACME-1' }));
     const r = new TestPlansResource(new HttpClient(baseConfig));
-    await r.updateIncludedTestCases('ACME-1', {
-      set: [{ testKey: 'ACME-10' }, { testKey: 'ACME-11' }],
-    });
+    await r.updateTestCaseOrder('ACME-1', { order: ['ACME-10', 'ACME-11'] });
     const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe(
-      'https://rtm.example.com/api/v2/test-plan/ACME-1/included-test-cases',
-    );
+    expect(url).toBe('https://rtm.example.com/api/test-plan/ACME-1/tc-order');
     expect(init.method).toBe('PUT');
     expect(JSON.parse(init.body as string)).toEqual({
-      includedTestCases: {
-        set: [{ testKey: 'ACME-10' }, { testKey: 'ACME-11' }],
-      },
+      order: ['ACME-10', 'ACME-11'],
     });
   });
 
-  it('updateIncludedTestCases() sends `add` body', async () => {
-    fetchSpy.mockResolvedValueOnce(jsonResponse({}));
+  it('createFolder() POSTs /{key}/tree/folders', async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse({ key: 'ACME-1' }));
     const r = new TestPlansResource(new HttpClient(baseConfig));
-    await r.updateIncludedTestCases('ACME-1', {
-      add: [{ testKey: 'ACME-12' }],
-    });
-    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    await r.createFolder('ACME-1', { name: 'Smoke', parentFolderPath: '/' });
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(
+      'https://rtm.example.com/api/test-plan/ACME-1/tree/folders',
+    );
+    expect(init.method).toBe('POST');
     expect(JSON.parse(init.body as string)).toEqual({
-      includedTestCases: { add: [{ testKey: 'ACME-12' }] },
+      name: 'Smoke',
+      parentFolderPath: '/',
     });
   });
 
-  it('updateIncludedTestCases() sends `remove` body', async () => {
-    fetchSpy.mockResolvedValueOnce(jsonResponse({}));
+  it('addTestCase() POSTs /{key}/testcases with { testKey } body', async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse({ key: 'ACME-1' }));
     const r = new TestPlansResource(new HttpClient(baseConfig));
-    await r.updateIncludedTestCases('ACME-1', {
-      remove: [{ testKey: 'ACME-12' }],
-    });
-    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(JSON.parse(init.body as string)).toEqual({
-      includedTestCases: { remove: [{ testKey: 'ACME-12' }] },
-    });
+    await r.addTestCase('ACME-1', 'ACME-10');
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://rtm.example.com/api/test-plan/ACME-1/testcases');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body as string)).toEqual({ testKey: 'ACME-10' });
   });
 
-  it('does NOT expose any DELETE method', async () => {
+  it('removeTestCase() DELETEs /{key}/testcases/{tcKey}', async () => {
+    fetchSpy.mockResolvedValueOnce(new Response(null, { status: 204 }));
     const r = new TestPlansResource(new HttpClient(baseConfig));
-    expect((r as unknown as Record<string, unknown>).delete).toBeUndefined();
+    await r.removeTestCase('ACME-1', 'ACME-10');
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(
+      'https://rtm.example.com/api/test-plan/ACME-1/testcases/ACME-10',
+    );
+    expect(init.method).toBe('DELETE');
+  });
+
+  it('encodes special characters in testCaseKey', async () => {
+    fetchSpy.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const r = new TestPlansResource(new HttpClient(baseConfig));
+    await r.removeTestCase('ACME-1', 'ACME/with space');
+    const [url] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(
+      'https://rtm.example.com/api/test-plan/ACME-1/testcases/ACME%2Fwith%20space',
+    );
   });
 });

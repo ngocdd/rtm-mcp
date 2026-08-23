@@ -41,22 +41,33 @@ export const UpdateTestPlanSchema = z.object({
   customFields: z.record(z.unknown()).optional(),
 });
 
-/**
- * Body for the single `PUT /api/v2/test-plan/{key}/included-test-cases`
- * endpoint. Exactly one of `set`, `add`, or `remove` must be provided —
- * the wire payload becomes `{ includedTestCases: { <op>: [...] } }`.
- *
- * Mutual exclusion is enforced in the tool handler (see
- * `registerTestPlanTools`) so the schema keeps its `.shape` accessible
- * to the MCP SDK.
- */
-const tcRef = z
-  .union([z.string().min(1), z.object({ testKey: z.string().min(1) })])
-  .describe('Test Case reference — pass a test key or `{ testKey }` object.');
+export const DeleteTestPlanSchema = z.object({
+  testPlanKey: z.string().min(1),
+});
 
-export const UpdateIncludedTestCasesSchema = z.object({
+export const UpdateTestCaseOrderSchema = z.object({
   testPlanKey: z.string().min(1).describe('Test Plan test key.'),
-  set: z.array(tcRef).min(1).optional().describe('Replace the included set with these test cases.'),
-  add: z.array(tcRef).min(1).optional().describe('Append these test cases to the included set.'),
-  remove: z.array(tcRef).min(1).optional().describe('Remove these test cases from the included set.'),
+  order: z
+    .array(z.string().min(1))
+    .min(1)
+    .describe('Test case keys in the desired order. Wire call: PUT /api/test-plan/{key}/tc-order.'),
+});
+
+export const CreateTestPlanFolderSchema = z.object({
+  testPlanKey: z.string().min(1).describe('Test Plan test key.'),
+  name: z.string().min(1).describe('Folder name.'),
+  parentFolderPath: z
+    .string()
+    .optional()
+    .describe('Parent folder path; omit to create at the tree root.'),
+});
+
+export const AddTestCaseToTestPlanSchema = z.object({
+  testPlanKey: z.string().min(1).describe('Test Plan test key.'),
+  testCaseKey: z.string().min(1).describe('Test Case key to include.'),
+});
+
+export const RemoveTestCaseFromTestPlanSchema = z.object({
+  testPlanKey: z.string().min(1).describe('Test Plan test key.'),
+  testCaseKey: z.string().min(1).describe('Test Case key to remove.'),
 });

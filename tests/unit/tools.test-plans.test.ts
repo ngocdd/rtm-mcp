@@ -42,8 +42,8 @@ async function makeClient(): Promise<Client> {
   return client;
 }
 
-describe('Test Plan MCP tools', () => {
-  it('rtm_get_test_plan GETs /v2/test-plan/{key}', async () => {
+describe('Test Plan MCP tools (V1)', () => {
+  it('rtm_get_test_plan GETs /test-plan/{key}', async () => {
     fetchSpy.mockResolvedValueOnce(jsonResponse({ key: 'ACME-1' }));
     const client = await makeClient();
     const res = await client.callTool({
@@ -52,7 +52,7 @@ describe('Test Plan MCP tools', () => {
     });
     expect(res.isError).toBeFalsy();
     const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://rtm.example.com/api/v2/test-plan/ACME-1');
+    expect(url).toBe('https://rtm.example.com/api/test-plan/ACME-1');
     expect(init.method).toBe('GET');
   });
 
@@ -69,7 +69,7 @@ describe('Test Plan MCP tools', () => {
     });
     expect(res.isError).toBeFalsy();
     const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://rtm.example.com/api/v2/test-plan');
+    expect(url).toBe('https://rtm.example.com/api/test-plan');
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body as string)).toMatchObject({
       projectKey: 'ACME',
@@ -86,89 +86,101 @@ describe('Test Plan MCP tools', () => {
       arguments: { testPlanKey: 'ACME-1', summary: 'Updated' },
     });
     const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('https://rtm.example.com/api/v2/test-plan/ACME-1');
+    expect(url).toBe('https://rtm.example.com/api/test-plan/ACME-1');
     expect(init.method).toBe('PUT');
     expect(JSON.parse(init.body as string)).toEqual({ summary: 'Updated' });
   });
 
-  it('rtm_update_test_plan_included_test_cases SETs the link list', async () => {
+  it('rtm_delete_test_plan DELETEs /{key}', async () => {
+    fetchSpy.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const client = await makeClient();
+    const res = await client.callTool({
+      name: 'rtm_delete_test_plan',
+      arguments: { testPlanKey: 'ACME-1' },
+    });
+    expect(res.isError).toBeFalsy();
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://rtm.example.com/api/test-plan/ACME-1');
+    expect(init.method).toBe('DELETE');
+  });
+
+  it('rtm_update_test_plan_tc_order PUTs /{key}/tc-order with { order }', async () => {
     fetchSpy.mockResolvedValueOnce(jsonResponse({}));
     const client = await makeClient();
     await client.callTool({
-      name: 'rtm_update_test_plan_included_test_cases',
-      arguments: {
-        testPlanKey: 'ACME-1',
-        set: ['ACME-10', { testKey: 'ACME-11' }],
-      },
+      name: 'rtm_update_test_plan_tc_order',
+      arguments: { testPlanKey: 'ACME-1', order: ['ACME-10', 'ACME-11'] },
+    });
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://rtm.example.com/api/test-plan/ACME-1/tc-order');
+    expect(init.method).toBe('PUT');
+    expect(JSON.parse(init.body as string)).toEqual({
+      order: ['ACME-10', 'ACME-11'],
+    });
+  });
+
+  it('rtm_create_test_plan_folder POSTs /{key}/tree/folders', async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse({}));
+    const client = await makeClient();
+    await client.callTool({
+      name: 'rtm_create_test_plan_folder',
+      arguments: { testPlanKey: 'ACME-1', name: 'Smoke' },
     });
     const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
     expect(url).toBe(
-      'https://rtm.example.com/api/v2/test-plan/ACME-1/included-test-cases',
+      'https://rtm.example.com/api/test-plan/ACME-1/tree/folders',
     );
-    expect(init.method).toBe('PUT');
-    expect(JSON.parse(init.body as string)).toEqual({
-      includedTestCases: {
-        set: [{ testKey: 'ACME-10' }, { testKey: 'ACME-11' }],
-      },
-    });
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body as string)).toEqual({ name: 'Smoke' });
   });
 
-  it('rtm_update_test_plan_included_test_cases ADDs to the link list', async () => {
+  it('rtm_add_test_case_to_test_plan POSTs /{key}/testcases with { testKey }', async () => {
     fetchSpy.mockResolvedValueOnce(jsonResponse({}));
     const client = await makeClient();
     await client.callTool({
-      name: 'rtm_update_test_plan_included_test_cases',
-      arguments: { testPlanKey: 'ACME-1', add: ['ACME-12'] },
+      name: 'rtm_add_test_case_to_test_plan',
+      arguments: { testPlanKey: 'ACME-1', testCaseKey: 'ACME-10' },
     });
-    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(JSON.parse(init.body as string)).toEqual({
-      includedTestCases: { add: [{ testKey: 'ACME-12' }] },
-    });
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://rtm.example.com/api/test-plan/ACME-1/testcases');
+    expect(init.method).toBe('POST');
+    expect(JSON.parse(init.body as string)).toEqual({ testKey: 'ACME-10' });
   });
 
-  it('rtm_update_test_plan_included_test_cases REMOVEs from the link list', async () => {
-    fetchSpy.mockResolvedValueOnce(jsonResponse({}));
-    const client = await makeClient();
-    await client.callTool({
-      name: 'rtm_update_test_plan_included_test_cases',
-      arguments: { testPlanKey: 'ACME-1', remove: ['ACME-12'] },
-    });
-    const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(JSON.parse(init.body as string)).toEqual({
-      includedTestCases: { remove: [{ testKey: 'ACME-12' }] },
-    });
-  });
-
-  it('rtm_update_test_plan_included_test_cases rejects multiple operations', async () => {
-    fetchSpy.mockResolvedValueOnce(jsonResponse({}));
+  it('rtm_remove_test_case_from_test_plan DELETEs /{key}/testcases/{tcKey}', async () => {
+    fetchSpy.mockResolvedValueOnce(new Response(null, { status: 204 }));
     const client = await makeClient();
     const res = await client.callTool({
-      name: 'rtm_update_test_plan_included_test_cases',
-      arguments: {
-        testPlanKey: 'ACME-1',
-        set: ['ACME-10'],
-        add: ['ACME-11'],
-      },
+      name: 'rtm_remove_test_case_from_test_plan',
+      arguments: { testPlanKey: 'ACME-1', testCaseKey: 'ACME-10' },
     });
-    expect(res.isError).toBe(true);
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(res.isError).toBeFalsy();
+    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(
+      'https://rtm.example.com/api/test-plan/ACME-1/testcases/ACME-10',
+    );
+    expect(init.method).toBe('DELETE');
   });
 
-  it('rtm_update_test_plan_included_test_cases rejects missing operation', async () => {
-    fetchSpy.mockResolvedValueOnce(jsonResponse({}));
-    const client = await makeClient();
-    const res = await client.callTool({
-      name: 'rtm_update_test_plan_included_test_cases',
-      arguments: { testPlanKey: 'ACME-1' },
-    });
-    expect(res.isError).toBe(true);
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
-  it('does NOT register any DELETE tool', async () => {
+  it('registers exactly the 8 documented Test Plan tools', async () => {
     const client = await makeClient();
     const listed = await client.listTools();
-    const names = listed.tools.map((t) => t.name);
-    expect(names).not.toContain('rtm_delete_test_plan');
+    const names = listed.tools.map((t) => t.name).filter((n) =>
+      n.startsWith('rtm_'),
+    );
+    expect(names).toEqual(
+      expect.arrayContaining([
+        'rtm_get_test_plan',
+        'rtm_create_test_plan',
+        'rtm_update_test_plan',
+        'rtm_delete_test_plan',
+        'rtm_update_test_plan_tc_order',
+        'rtm_create_test_plan_folder',
+        'rtm_add_test_case_to_test_plan',
+        'rtm_remove_test_case_from_test_plan',
+      ]),
+    );
+    // removed bulk link-management tool
+    expect(names).not.toContain('rtm_update_test_plan_included_test_cases');
   });
 });

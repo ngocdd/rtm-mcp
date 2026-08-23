@@ -1,35 +1,39 @@
 /**
  * Resource methods for Test Plans.
  *
- * V2 endpoints:
- *   GET  /api/v2/test-plan/{testKey}
- *   POST /api/v2/test-plan
- *   PUT  /api/v2/test-plan/{testKey}
- *   PUT  /api/v2/test-plan/{testKey}/included-test-cases
- *        body: { "includedTestCases": { "set"|"add"|"remove": [{"testKey": "..."}] } }
+ * V1 endpoints (per deviniti REST API docs):
+ *   GET    /api/test-plan/{testKey}
+ *   PUT    /api/test-plan/{testKey}
+ *   DELETE /api/test-plan/{testKey}
+ *   PUT    /api/test-plan/{testKey}/tc-order
+ *   POST   /api/test-plan
+ *   POST   /api/test-plan/{testKey}/tree/folders
+ *   POST   /api/test-plan/{testKey}/testcases
+ *   DELETE /api/test-plan/{testKey}/testcases/{tcKey}
  *
- * Included-test-cases link management follows the same single-endpoint +
- * body-operation pattern as Test Case covered-requirements (documented on
- * the devinti REST API page). Earlier attempts to call separate
- * `/{testKey}/included-test-cases/set|add|remove` returned 404.
- *
- * DELETE endpoints are intentionally NOT exposed — destructive operations
- * belong behind an explicit confirmation flow in the MCP client.
+ * Test Case inclusion is two separate endpoints:
+ *   - POST   .../testcases          — add one test case
+ *   - DELETE .../testcases/{tcKey}  — remove one test case
+ * Re-ordering included cases uses PUT .../tc-order with the new ordering.
  */
 import { HttpClient } from '../client/http.js';
 import type {
   CreateTestPlanInput,
-  LinkRef,
   TestPlan,
   UpdateTestPlanInput,
 } from './types.js';
 
-const BASE = '/v2/test-plan';
+const BASE = '/test-plan';
 
-export type IncludedTestCasesOperation =
-  | { set: LinkRef[] }
-  | { add: LinkRef[] }
-  | { remove: LinkRef[] };
+export interface CreateTestPlanFolderInput {
+  name: string;
+  parentFolderPath?: string;
+}
+
+export interface UpdateTestCaseOrderInput {
+  /** Test case keys in the desired order. */
+  order: string[];
+}
 
 export class TestPlansResource {
   constructor(private readonly http: HttpClient) {}
@@ -49,18 +53,59 @@ export class TestPlansResource {
     );
   }
 
+  delete(testPlanKey: string): Promise<void> {
+    return this.http.delete<void>(
+      `${BASE}/${encodeURIComponent(testPlanKey)}`,
+    );
+  }
+
   /**
-   * Replace / extend / shrink the set of Test Cases included in a Test Plan.
-   * Pass exactly one of `set`, `add`, or `remove` — the body sent to RTM is
-   * `{ "includedTestCases": <operation> }`.
+   * Persist a new ordering for the test cases already included in a Test Plan.
+   * Wire call: `PUT /api/test-plan/{key}/tc-order` with body
+   * `{ order: ["TC-1", "TC-3", "TC-2"] }`.
    */
-  updateIncludedTestCases(
+  updateTestCaseOrder(
     testPlanKey: string,
-    operation: IncludedTestCasesOperation,
+    input: UpdateTestCaseOrderInput,
   ): Promise<TestPlan> {
     return this.http.put<TestPlan>(
-      `${BASE}/${encodeURIComponent(testPlanKey)}/included-test-cases`,
-      { body: { includedTestCases: operation } },
+      `${BASE}/${encodeURIComponent(testPlanKey)}/tc-order`,
+      { body: input },
+    );
+  }
+
+  /**
+   * Create a folder inside a Test Plan's tree.
+   * Wire call: `POST /api/test-plan/{key}/tree/folders`.
+   */
+  createFolder(
+    testPlanKey: string,
+    input: CreateTestPlanFolderInput,
+  ): Promise<TestPlan> {
+    return this.http.post<TestPlan>(
+      `${BASE}/${encodeURIComponent(testPlanKey)}/tree/folders`,
+      { body: input },
+    );
+  }
+
+  /**
+   * Add a Test Case to a Test Plan.
+   * Wire call: `POST /api/test-plan/{key}/testcases`.
+   */
+  addTestCase(testPlanKey: string, testCaseKey: string): Promise<TestPlan> {
+    return this.http.post<TestPlan>(
+      `${BASE}/${encodeURIComponent(testPlanKey)}/testcases`,
+      { body: { testKey: testCaseKey } },
+    );
+  }
+
+  /**
+   * Remove a Test Case from a Test Plan.
+   * Wire call: `DELETE /api/test-plan/{key}/testcases/{tcKey}`.
+   */
+  removeTestCase(testPlanKey: string, testCaseKey: string): Promise<void> {
+    return this.http.delete<void>(
+      `${BASE}/${encodeURIComponent(testPlanKey)}/testcases/${encodeURIComponent(testCaseKey)}`,
     );
   }
 }
