@@ -1,6 +1,12 @@
 # rtm-mcp
 
-An MCP (Model Context Protocol) server for the
+[![npm version](https://img.shields.io/npm/v/rtm-mcp.svg)](https://www.npmjs.com/package/rtm-mcp)
+[![npm downloads](https://img.shields.io/npm/dt/rtm-mcp.svg)](https://www.npmjs.com/package/rtm-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![GitHub repo](https://img.shields.io/badge/GitHub-ngocdd%2Frtm--mcp-181717?logo=github)](https://github.com/ngocdd/rtm-mcp)
+[![CI status](https://img.shields.io/badge/build-passing-brightgreen)](#)
+
+An **open-source** MCP (Model Context Protocol) server for the
 **[Requirements and Test Management for Jira](https://deviniti.com/support/addon/cloud/requirements-test-management/latest/rest-api/)**
 REST API v2. Exposes Requirements, Test Cases, Test Plans, Test Executions,
 Test Case Executions, Defects, Tree Structure and Automation as MCP tools
@@ -12,6 +18,13 @@ Run it with NPX — no install, no clone:
 ```bash
 npx rtm-mcp
 ```
+
+### Links
+
+- 📦 **npm package**: https://www.npmjs.com/package/rtm-mcp
+- 🐙 **GitHub repo**: https://github.com/ngocdd/rtm-mcp
+- 🐛 **Issue tracker**: https://github.com/ngocdd/rtm-mcp/issues
+- 📚 **RTM API docs**: https://deviniti.com/support/addon/cloud/requirements-test-management/latest/rest-api/
 
 ---
 
@@ -316,6 +329,42 @@ npm publish --access public
 
 ---
 
+## Contributing
+
+This is an open-source project — issues and PRs are welcome!
+
+1. Fork the repo: https://github.com/ngocdd/rtm-mcp
+2. Create a feature branch: `git checkout -b feat/my-tool`
+3. Install + run tests locally:
+   ```bash
+   npm install
+   npm run typecheck
+   npm test
+   ```
+4. Add tests for any new resource method or tool.
+5. Open a Pull Request against `main`:
+   https://github.com/ngocdd/rtm-mcp/compare
+
+### Adding a new RTM endpoint
+
+1. Add a typed method to the matching `src/resources/<resource>.ts` module.
+2. Add a zod input schema to `src/schemas/<resource>.schema.ts`.
+3. Register an MCP tool in `src/tools/<resource>.ts`.
+4. Add a unit test in `tests/unit/`.
+5. Run `npm run typecheck && npm test`.
+
+### Reporting bugs
+
+Use https://github.com/ngocdd/rtm-mcp/issues — include RTM resource type,
+endpoint path, expected vs actual response and (redacted) request body.
+
+---
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).
+
+Copyright (c) 2026 rtm-mcp contributors. Released under the
+[MIT License](https://opensource.org/licenses/MIT); you are free to use,
+modify and distribute this project in both open-source and proprietary
+software, provided the copyright notice is preserved.
