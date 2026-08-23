@@ -1,0 +1,52 @@
+{
+  "name": "rtm-mcp",
+  "version": "0.1.3",
+  "description": "MCP server for the RTM (Requirements & Test Management) REST API v2 — exposes Requirements, Test Cases, Test Plans, Test Executions, Defects, Tree Structure and Automation as MCP tools.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "rtm-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json && chmod +x dist/index.js",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "RTM_LIVE=1 vitest run tests/integration",
+    "lint": "echo 'lint not configured yet'",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "rtm",
+    "requirements-test-management",
+    "jira",
+    "hexygen",
+    "deviniti",
+    "test-management",
+    "qa"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}
