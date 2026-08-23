@@ -1,38 +1,22 @@
 /**
  * Resource methods for Test Executions.
  *
- * Endpoint pattern (V2): /api/v2/test-execution
+ * Endpoint pattern: /api/v2/test-execution
+ *
+ * Create flow uses `POST /api/v2/test-execution/execute/{testPlanTestKey}`,
+ * where the plan key is a path param, not part of the body.
  */
 import { HttpClient } from '../client/http.js';
 import type {
   CreateTestExecutionInput,
-  PaginatedResponse,
   TestExecution,
   UpdateTestExecutionInput,
 } from './types.js';
-
-export interface ListTestExecutionsParams {
-  projectKey: string;
-  folder?: string;
-  page?: number;
-  pageSize?: number;
-}
 
 const BASE = '/v2/test-execution';
 
 export class TestExecutionsResource {
   constructor(private readonly http: HttpClient) {}
-
-  list(params: ListTestExecutionsParams): Promise<PaginatedResponse<TestExecution>> {
-    return this.http.get<PaginatedResponse<TestExecution>>(BASE, {
-      query: {
-        projectKey: params.projectKey,
-        folder: params.folder,
-        page: params.page,
-        pageSize: params.pageSize,
-      },
-    });
-  }
 
   get(testExecutionKey: string): Promise<TestExecution> {
     return this.http.get<TestExecution>(
@@ -40,8 +24,14 @@ export class TestExecutionsResource {
     );
   }
 
-  create(input: CreateTestExecutionInput): Promise<TestExecution> {
-    return this.http.post<TestExecution>(BASE, { body: input });
+  create(
+    testPlanTestKey: string,
+    input: Omit<CreateTestExecutionInput, 'projectKey' | 'testPlanTestKey'>,
+  ): Promise<TestExecution> {
+    return this.http.post<TestExecution>(
+      `${BASE}/execute/${encodeURIComponent(testPlanTestKey)}`,
+      { body: input },
+    );
   }
 
   update(

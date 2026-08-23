@@ -66,7 +66,7 @@ export interface StepGroup {
 export interface Requirement {
   id?: string;
   key: string;
-  name: string;
+  summary: string;
   description?: string;
   projectKey: string;
   folder?: string;
@@ -85,7 +85,8 @@ export interface Requirement {
 
 export interface CreateRequirementInput {
   projectKey: string;
-  name: string;
+  summary: string;
+  issueTypeId: number;
   description?: string;
   folder?: string;
   folderPath?: string;
@@ -100,7 +101,7 @@ export type UpdateRequirementInput = Partial<Omit<CreateRequirementInput, 'proje
 export interface TestCase {
   id?: string;
   key: string;
-  name: string;
+  summary: string;
   description?: string;
   objective?: string;
   precondition?: string;
@@ -128,7 +129,8 @@ export interface TestCase {
 
 export interface CreateTestCaseInput {
   projectKey: string;
-  name: string;
+  summary: string;
+  issueTypeId: number;
   testKey?: string;
   description?: string;
   objective?: string;
@@ -157,7 +159,7 @@ export type UpdateTestCaseInput = Partial<Omit<CreateTestCaseInput, 'projectKey'
 export interface TestPlan {
   id?: string;
   key: string;
-  name: string;
+  summary: string;
   description?: string;
   projectKey: string;
   folder?: string;
@@ -175,7 +177,8 @@ export interface TestPlan {
 
 export interface CreateTestPlanInput {
   projectKey: string;
-  name: string;
+  summary: string;
+  issueTypeId: number;
   description?: string;
   folder?: string;
   folderPath?: string;
@@ -191,7 +194,7 @@ export type UpdateTestPlanInput = Partial<Omit<CreateTestPlanInput, 'projectKey'
 export interface TestExecution {
   id?: string;
   key: string;
-  name: string;
+  summary?: string;
   description?: string;
   projectKey: string;
   folder?: string;
@@ -209,7 +212,7 @@ export interface TestExecution {
 
 export interface CreateTestExecutionInput {
   projectKey: string;
-  name: string;
+  summary?: string;
   description?: string;
   folder?: string;
   folderPath?: string;
@@ -225,7 +228,7 @@ export type UpdateTestExecutionInput = Partial<Omit<CreateTestExecutionInput, 'p
 export interface TestCaseExecution {
   id?: string;
   key: string;
-  name?: string;
+  summary?: string;
   testCaseKey?: string;
   testKey?: string;
   testExecutionKey?: string;
@@ -244,7 +247,7 @@ export interface TestCaseExecution {
 export interface Defect {
   id?: string;
   key: string;
-  name: string;
+  summary: string;
   description?: string;
   projectKey: string;
   status?: string;
@@ -261,7 +264,8 @@ export interface Defect {
 
 export interface CreateDefectInput {
   projectKey: string;
-  name: string;
+  summary: string;
+  issueTypeId: number;
   description?: string;
   status?: string;
   priority?: string;

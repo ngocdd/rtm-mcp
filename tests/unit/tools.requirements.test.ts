@@ -46,28 +46,50 @@ async function makeClient(): Promise<Client> {
 }
 
 describe('Requirement MCP tools', () => {
-  it('rtm_list_requirements returns JSON payload', async () => {
-    fetchSpy.mockResolvedValueOnce(jsonResponse({ items: [{ key: 'R-1' }], total: 1 }));
-    const client = await makeClient();
-    const res = await client.callTool({ name: 'rtm_list_requirements', arguments: { projectKey: 'ACME' } });
-    expect(res.isError).toBeFalsy();
-    const block = res.content[0] as { type: string; text: string };
-    expect(block.type).toBe('text');
-    const parsed = JSON.parse(block.text);
-    expect(parsed.total).toBe(1);
-  });
-
-  it('rtm_create_requirement POSTs the payload', async () => {
+  it('rtm_create_requirement POSTs the payload with summary + issueTypeId', async () => {
     fetchSpy.mockResolvedValueOnce(jsonResponse({ key: 'NEW-1' }));
     const client = await makeClient();
     const res = await client.callTool({
       name: 'rtm_create_requirement',
-      arguments: { projectKey: 'ACME', name: 'My req' },
+      arguments: {
+        projectKey: 'ACME',
+        summary: 'My req',
+        issueTypeId: 10015,
+      },
     });
     expect(res.isError).toBeFalsy();
     const [, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
     expect(init.method).toBe('POST');
-    expect(JSON.parse(init.body as string)).toMatchObject({ projectKey: 'ACME', name: 'My req' });
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      projectKey: 'ACME',
+      summary: 'My req',
+      issueTypeId: 10015,
+    });
+  });
+
+  it('rtm_create_requirement validates missing summary', async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse({ key: 'NEW-1' }));
+    const client = await makeClient();
+    const res = await client.callTool({
+      name: 'rtm_create_requirement',
+      // @ts-expect-error testing missing fields
+      arguments: { projectKey: 'ACME', issueTypeId: 10015 },
+    });
+    expect(res.isError).toBe(true);
+    // zod validation error surfaces via isError
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('rtm_create_requirement validates missing issueTypeId', async () => {
+    fetchSpy.mockResolvedValueOnce(jsonResponse({ key: 'NEW-1' }));
+    const client = await makeClient();
+    const res = await client.callTool({
+      name: 'rtm_create_requirement',
+      // @ts-expect-error testing missing fields
+      arguments: { projectKey: 'ACME', summary: 'x' },
+    });
+    expect(res.isError).toBe(true);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('returns isError on 404', async () => {
@@ -92,18 +114,5 @@ describe('Requirement MCP tools', () => {
     expect(res.isError).toBe(true);
     const block = res.content[0] as { type: string; text: string };
     expect(block.text).toMatch(/Authentication failed|RTM_API_TOKEN/i);
-  });
-
-  it('rtm_set_requirement_covered_test_cases uses PUT', async () => {
-    fetchSpy.mockResolvedValueOnce(new Response(null, { status: 204 }));
-    const client = await makeClient();
-    const res = await client.callTool({
-      name: 'rtm_set_requirement_covered_test_cases',
-      arguments: { requirementKey: 'R-1', testCaseKeys: ['TC-1'] },
-    });
-    expect(res.isError).toBeFalsy();
-    const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
-    expect(url).toContain('/requirement/R-1/covered-test-cases');
-    expect(init.method).toBe('PUT');
   });
 });

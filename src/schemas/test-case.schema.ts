@@ -1,8 +1,11 @@
 /**
  * Zod input schemas for Test Case MCP tools.
+ *
+ * NOTE: the RTM API exposes no list endpoint for test cases; the per-project
+ * tree must be fetched via the tree-structure tool.
  */
 import { z } from 'zod';
-import { folderPath, pagination, projectKey } from './common.js';
+import { folderPath, projectKey } from './common.js';
 
 const stepColumnSchema = z.object({
   ordinal: z.number().int().nonnegative(),
@@ -29,19 +32,18 @@ const testKeyList = z
   .min(1)
   .describe('List of test keys.');
 
-export const ListTestCasesSchema = z.object({
-  projectKey,
-  folder: folderPath,
-  ...pagination,
-});
-
 export const GetTestCaseSchema = z.object({
   testCaseKey: z.string().min(1).describe('Test Case test key.'),
 });
 
 export const CreateTestCaseSchema = z.object({
   projectKey,
-  name: z.string().min(1).describe('Test Case name (summary).'),
+  summary: z.string().min(1).describe('Test Case summary.'),
+  issueTypeId: z
+    .number()
+    .int()
+    .positive()
+    .describe('Numeric Jira issue type ID for Test Case (project-specific).'),
   testKey: z.string().optional().describe('Optional explicit test key.'),
   description: z.string().optional(),
   objective: z.string().optional(),
@@ -50,7 +52,9 @@ export const CreateTestCaseSchema = z.object({
   folder: folderPath,
   folderPath: z.string().optional(),
   parentTestKey: z.string().optional().describe('Folder/parent test key.'),
-  priority: z.union([z.string(), z.object({ id: z.number().int(), name: z.string().optional() })]).optional(),
+  priority: z
+    .union([z.string(), z.object({ id: z.number().int(), name: z.string().optional() })])
+    .optional(),
   status: z.string().optional(),
   owner: z.string().optional(),
   estimatedTime: z.number().optional(),
@@ -60,21 +64,25 @@ export const CreateTestCaseSchema = z.object({
   components: z.array(z.object({ id: z.string().optional(), name: z.string().optional() })).optional(),
   versions: z.array(z.object({ id: z.string().optional(), name: z.string().optional() })).optional(),
   stepGroups: z.array(stepGroupSchema).optional(),
-  coveredRequirements: z.array(z.union([z.string(), z.object({ testKey: z.string() })])).optional(),
+  coveredRequirements: z
+    .array(z.union([z.string(), z.object({ testKey: z.string() })]))
+    .optional(),
   links: z.array(z.object({ testKey: z.string() })).optional(),
   customFields: z.record(z.unknown()).optional(),
 });
 
 export const UpdateTestCaseSchema = z.object({
   testCaseKey: z.string().min(1),
-  name: z.string().optional(),
+  summary: z.string().min(1).optional(),
   description: z.string().optional(),
   objective: z.string().optional(),
   precondition: z.string().optional(),
   preconditions: z.string().optional(),
   folder: z.string().optional(),
   folderPath: z.string().optional(),
-  priority: z.union([z.string(), z.object({ id: z.number().int(), name: z.string().optional() })]).optional(),
+  priority: z
+    .union([z.string(), z.object({ id: z.number().int(), name: z.string().optional() })])
+    .optional(),
   status: z.string().optional(),
   owner: z.string().optional(),
   estimatedTime: z.number().optional(),
@@ -88,6 +96,9 @@ export const DeleteTestCaseSchema = z.object({
   testCaseKey: z.string().min(1),
 });
 
+// NOTE: covered-requirements linking is NOT supported by the live RTM REST API
+// (returns 404 on every PUT). Schemas retained so callers fail fast with a
+// validation error; tools that exposed them have been removed.
 const CoveredRequirementsSchema = z.object({
   testCaseKey: z.string().min(1),
   requirementKeys: testKeyList.describe('Requirement test keys to link.'),

@@ -1,13 +1,10 @@
 /**
  * Zod input schemas for Defect MCP tools.
+ *
+ * NOTE: the RTM API exposes no list endpoint for defects.
  */
 import { z } from 'zod';
-import { pagination, projectKey } from './common.js';
-
-export const ListDefectsSchema = z.object({
-  projectKey,
-  ...pagination,
-});
+import { projectKey } from './common.js';
 
 export const GetDefectSchema = z.object({
   defectKey: z.string().min(1),
@@ -15,7 +12,12 @@ export const GetDefectSchema = z.object({
 
 export const CreateDefectSchema = z.object({
   projectKey,
-  name: z.string().min(1).describe('Defect summary.'),
+  summary: z.string().min(1).describe('Defect summary.'),
+  issueTypeId: z
+    .number()
+    .int()
+    .positive()
+    .describe('Numeric Jira issue type ID for Defect (project-specific).'),
   description: z.string().optional(),
   status: z.string().optional(),
   priority: z.string().optional(),
@@ -26,7 +28,7 @@ export const CreateDefectSchema = z.object({
 
 export const UpdateDefectSchema = z.object({
   defectKey: z.string().min(1),
-  name: z.string().optional(),
+  summary: z.string().min(1).optional(),
   description: z.string().optional(),
   status: z.string().optional(),
   priority: z.string().optional(),
@@ -38,6 +40,9 @@ export const DeleteDefectSchema = z.object({
   defectKey: z.string().min(1),
 });
 
+// NOTE: identifying-test-cases linking is NOT supported by the live RTM REST
+// API (returns 404 on every PUT). Schema retained so callers fail fast; the
+// tool that exposed it has been removed.
 export const SetIdentifyingTestCasesSchema = z.object({
   defectKey: z.string().min(1),
   testCaseKeys: z.array(z.string().min(1)).min(1),

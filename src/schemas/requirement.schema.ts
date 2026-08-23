@@ -1,5 +1,8 @@
 /**
  * Zod input schemas for Requirement MCP tools.
+ *
+ * NOTE: the RTM API exposes no list endpoint for requirements; the per-project
+ * tree must be fetched via the tree-structure tool.
  */
 import { z } from 'zod';
 
@@ -13,20 +16,20 @@ const testCaseKeyList = z
   .min(1)
   .describe('List of test case keys to link.');
 
-export const ListRequirementsSchema = z.object({
-  projectKey,
-  folder: z.string().optional().describe('Restrict to a folder path.'),
-  page: z.number().int().positive().optional(),
-  pageSize: z.number().int().positive().max(200).optional(),
-});
-
 export const GetRequirementSchema = z.object({
   requirementKey,
 });
 
 export const CreateRequirementSchema = z.object({
   projectKey,
-  name: z.string().min(1).describe('Requirement name (summary).'),
+  summary: z.string().min(1).describe('Requirement summary (the "name" field).'),
+  issueTypeId: z
+    .number()
+    .int()
+    .positive()
+    .describe(
+      'Numeric Jira issue type ID for Requirement (project-specific; e.g. 10015 in KAN).',
+    ),
   description: z.string().optional(),
   folder: z.string().optional().describe('Folder path inside the project.'),
   folderPath: z.string().optional(),
@@ -38,7 +41,7 @@ export const CreateRequirementSchema = z.object({
 
 export const UpdateRequirementSchema = z.object({
   requirementKey,
-  name: z.string().min(1).optional(),
+  summary: z.string().min(1).optional(),
   description: z.string().optional(),
   folder: z.string().optional(),
   folderPath: z.string().optional(),
@@ -52,6 +55,10 @@ export const DeleteRequirementSchema = z.object({
   requirementKey,
 });
 
+// NOTE: covered-test-cases linking is NOT supported by the live RTM REST API
+// (returns 404 on every PUT). The schemas below are retained so callers fail
+// fast with a validation error instead of hitting the API blindly; the tools
+// that exposed them have been removed.
 const CoveredTestCasesSchema = z.object({
   requirementKey,
   testCaseKeys: testCaseKeyList,

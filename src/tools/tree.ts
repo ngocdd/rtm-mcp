@@ -12,7 +12,7 @@ export function registerTreeTools(
 ): void {
   server.tool(
     'rtm_get_tree_structure',
-    'Fetch the folder tree structure for a project (or all projects).',
+    'Fetch the folder tree structure for a single Jira project. Requires numeric projectId (resolve from projectKey via Jira REST API) and treeType.',
     GetTreeStructureSchema.shape,
     async (args) => {
       try {

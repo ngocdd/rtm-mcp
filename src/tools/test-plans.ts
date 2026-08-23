@@ -1,16 +1,17 @@
 /**
  * MCP tool definitions for Test Plans.
+ *
+ * NOTE: `rtm_list_test_plans` was removed because the RTM REST API exposes no
+ * list endpoint. Use the tree-structure tool to enumerate test plans in a
+ * project. Included-test-cases link tools were removed because the underlying
+ * PUT endpoints return 404 on the live API.
  */
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { TestPlansResource } from '../resources/test-plans.js';
 import {
-  AddIncludedTestCasesSchema,
   CreateTestPlanSchema,
   DeleteTestPlanSchema,
   GetTestPlanSchema,
-  ListTestPlansSchema,
-  RemoveIncludedTestCasesSchema,
-  SetIncludedTestCasesSchema,
   UpdateTestPlanSchema,
 } from '../schemas/test-plan.schema.js';
 import { textResult, toErrorResult } from '../utils/response.js';
@@ -19,19 +20,6 @@ export function registerTestPlanTools(
   server: McpServer,
   resource: TestPlansResource,
 ): void {
-  server.tool(
-    'rtm_list_test_plans',
-    'List Test Plans in a Jira project.',
-    ListTestPlansSchema.shape,
-    async (args) => {
-      try {
-        return textResult(await resource.list(args));
-      } catch (err) {
-        return toErrorResult(err, 'rtm_list_test_plans');
-      }
-    },
-  );
-
   server.tool(
     'rtm_get_test_plan',
     'Fetch a single Test Plan by its test key.',
@@ -82,48 +70,6 @@ export function registerTestPlanTools(
         return textResult({ deleted: true, testPlanKey: args.testPlanKey });
       } catch (err) {
         return toErrorResult(err, 'rtm_delete_test_plan');
-      }
-    },
-  );
-
-  server.tool(
-    'rtm_set_test_plan_included_test_cases',
-    'Replace the set of Test Cases included in a Test Plan.',
-    SetIncludedTestCasesSchema.shape,
-    async (args) => {
-      try {
-        await resource.setIncludedTestCases(args.testPlanKey, args.testCaseKeys);
-        return textResult({ ok: true, testPlanKey: args.testPlanKey, action: 'set' });
-      } catch (err) {
-        return toErrorResult(err, 'rtm_set_test_plan_included_test_cases');
-      }
-    },
-  );
-
-  server.tool(
-    'rtm_add_test_plan_included_test_cases',
-    'Append Test Cases to a Test Plan.',
-    AddIncludedTestCasesSchema.shape,
-    async (args) => {
-      try {
-        await resource.addIncludedTestCases(args.testPlanKey, args.testCaseKeys);
-        return textResult({ ok: true, testPlanKey: args.testPlanKey, action: 'add' });
-      } catch (err) {
-        return toErrorResult(err, 'rtm_add_test_plan_included_test_cases');
-      }
-    },
-  );
-
-  server.tool(
-    'rtm_remove_test_plan_included_test_cases',
-    'Remove Test Cases from a Test Plan.',
-    RemoveIncludedTestCasesSchema.shape,
-    async (args) => {
-      try {
-        await resource.removeIncludedTestCases(args.testPlanKey, args.testCaseKeys);
-        return textResult({ ok: true, testPlanKey: args.testPlanKey, action: 'remove' });
-      } catch (err) {
-        return toErrorResult(err, 'rtm_remove_test_plan_included_test_cases');
       }
     },
   );
