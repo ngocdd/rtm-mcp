@@ -110,7 +110,7 @@ Use the `claude mcp add` command to register the server with Claude Code.
 ```bash
 claude mcp add --scope user --transport stdio rtm \
   -e RTM_API_TOKEN=<your-token-here> \
-  -e RTM_BASE_URL=https://rtm-us.devinti.com/api \
+  -e RTM_BASE_URL=https://rtm-us.deviniti.com/api \
   -- npx -y rtm-mcp
 ```
 
@@ -131,7 +131,7 @@ project on this machine can see the `rtm` server.
 ```bash
 claude mcp add --scope project --transport stdio rtm \
   -e RTM_API_TOKEN=<your-token-here> \
-  -e RTM_BASE_URL=https://rtm-us.devinti.com/api \
+  -e RTM_BASE_URL=https://rtm-us.deviniti.com/api \
   -- npx -y rtm-mcp
 ```
 
