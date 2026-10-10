@@ -23,7 +23,7 @@ export const CreateDefectSchema = z.object({
   priority: z.string().optional(),
   assignee: z.string().optional(),
   identifyingTestCases: z.array(z.object({ testKey: z.string() })).optional(),
-  customFields: z.record(z.unknown()).optional(),
+  customFields: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const UpdateDefectSchema = z.object({
@@ -33,7 +33,7 @@ export const UpdateDefectSchema = z.object({
   status: z.string().optional(),
   priority: z.string().optional(),
   assignee: z.string().optional(),
-  customFields: z.record(z.unknown()).optional(),
+  customFields: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const DeleteDefectSchema = z.object({

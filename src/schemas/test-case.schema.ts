@@ -65,7 +65,7 @@ export const CreateTestCaseSchema = z.object({
   stepGroups: z.array(stepGroupSchema).optional(),
   coveredRequirements: z.array(reqRef).optional(),
   links: z.array(z.object({ testKey: z.string() })).optional(),
-  customFields: z.record(z.unknown()).optional(),
+  customFields: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const UpdateTestCaseSchema = z.object({
@@ -86,7 +86,7 @@ export const UpdateTestCaseSchema = z.object({
   environment: z.string().optional(),
   labels: z.array(z.string()).optional(),
   stepGroups: z.array(stepGroupSchema).optional(),
-  customFields: z.record(z.unknown()).optional(),
+  customFields: z.record(z.string(), z.unknown()).optional(),
 });
 
 /**

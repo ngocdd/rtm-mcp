@@ -39,7 +39,7 @@ export const UpdateTestCaseExecutionSchema = z.object({
   status: z.string().min(1).optional(),
   comment: z.string().optional(),
   executedBy: z.string().optional(),
-  customFields: z.record(z.unknown()).optional(),
+  customFields: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const LinkDefectToTceSchema = z.object({

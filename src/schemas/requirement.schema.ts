@@ -36,7 +36,7 @@ export const CreateRequirementSchema = z.object({
   priority: z.string().optional(),
   owner: z.string().optional(),
   status: z.string().optional(),
-  customFields: z.record(z.unknown()).optional(),
+  customFields: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const UpdateRequirementSchema = z.object({
@@ -48,7 +48,7 @@ export const UpdateRequirementSchema = z.object({
   priority: z.string().optional(),
   owner: z.string().optional(),
   status: z.string().optional(),
-  customFields: z.record(z.unknown()).optional(),
+  customFields: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const DeleteRequirementSchema = z.object({

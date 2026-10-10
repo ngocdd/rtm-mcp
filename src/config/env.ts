@@ -15,7 +15,7 @@ const LogLevelSchema = z.enum(['debug', 'info', 'warn', 'error']);
 
 const ConfigSchema = z.object({
   apiToken: z
-    .string({ required_error: 'RTM_API_TOKEN is required' })
+    .string({ error: 'RTM_API_TOKEN is required' })
     .min(1, 'RTM_API_TOKEN must not be empty'),
   baseUrl: z
     .string()

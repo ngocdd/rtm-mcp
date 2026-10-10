@@ -26,7 +26,7 @@ export const CreateTestPlanSchema = z.object({
   status: z.string().optional(),
   owner: z.string().optional(),
   includedTestCases: z.array(z.object({ testKey: z.string() })).optional(),
-  customFields: z.record(z.unknown()).optional(),
+  customFields: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const UpdateTestPlanSchema = z.object({
@@ -38,7 +38,7 @@ export const UpdateTestPlanSchema = z.object({
   priority: z.string().optional(),
   status: z.string().optional(),
   owner: z.string().optional(),
-  customFields: z.record(z.unknown()).optional(),
+  customFields: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const DeleteTestPlanSchema = z.object({

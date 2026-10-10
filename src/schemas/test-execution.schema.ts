@@ -31,7 +31,7 @@ export const CreateTestExecutionSchema = z.object({
   status: z.string().optional(),
   owner: z.string().optional(),
   includedTestCases: z.array(z.object({ testKey: z.string() })).optional(),
-  customFields: z.record(z.unknown()).optional(),
+  customFields: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const UpdateTestExecutionSchema = z.object({
@@ -43,7 +43,7 @@ export const UpdateTestExecutionSchema = z.object({
   priority: z.string().optional(),
   status: z.string().optional(),
   owner: z.string().optional(),
-  customFields: z.record(z.unknown()).optional(),
+  customFields: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const DeleteTestExecutionSchema = z.object({
